@@ -63,7 +63,7 @@ const Dashboard = () => {
                         </div>
                         <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Dashboard</h1>
                     </div>
-                    <p className="text-[var(--color-text-muted)] mt-1 ml-12">Visão geral do seu negócio e atividades recente.</p>
+                    <p className="text-[var(--color-text-muted)] mt-1 ml-12">Visão geral do seu negócio e atividades recentes.</p>
                 </div>
 
                 {/* Revenue Chart */}
