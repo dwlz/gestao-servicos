@@ -1,15 +1,37 @@
-import { useState } from 'react';
-import { mockEmpresas, mockLocais } from '../services/mockData';
+import { useState, useEffect } from 'react';
+import { empresasApi } from '../services/api';
 import EmpresaCard from '../components/EmpresaCard';
 import { Plus, Search, Building2 } from 'lucide-react';
+import type { Empresa, Local } from '../types';
 
 const Empresas = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [empresas, setEmpresas] = useState<Empresa[]>([]);
+    const [locais, setLocais] = useState<Local[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const filteredEmpresas = mockEmpresas.filter(empresa =>
+    useEffect(() => {
+        Promise.all([empresasApi.list(), empresasApi.allLocais()])
+            .then(([emp, loc]) => {
+                setEmpresas(emp);
+                setLocais(loc);
+            })
+            .catch(console.error)
+            .finally(() => setLoading(false));
+    }, []);
+
+    const filteredEmpresas = empresas.filter(empresa =>
         empresa.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
         empresa.cnpj.includes(searchTerm)
     );
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-page-enter">
@@ -48,7 +70,7 @@ const Empresas = () => {
                         <div key={empresa.id} className="animate-slide-up" style={{ animationDelay: `${(i + 2) * 0.08}s`, animationFillMode: 'both' }}>
                             <EmpresaCard
                                 empresa={empresa}
-                                locais={mockLocais.filter(l => l.empresaId === empresa.id)}
+                                locais={locais.filter(l => l.empresaId === empresa.id)}
                             />
                         </div>
                     ))

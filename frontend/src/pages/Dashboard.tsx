@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import StatsCard from '../components/StatsCard';
 import RecentServices from '../components/RecentServices';
 import SnowParticles from '../components/SnowParticles';
@@ -6,7 +6,8 @@ import RevenueChart, { allMonthsData } from '../components/RevenueChart';
 import NovoOrcamentoModal from '../components/NovoOrcamentoModal';
 import RegistrarServicoModal from '../components/RegistrarServicoModal';
 import CadastrarClienteModal from '../components/CadastrarClienteModal';
-import { mockServicos, mockEmpresas } from '../services/mockData';
+import { servicosApi, empresasApi } from '../services/api';
+import type { Servico, Empresa } from '../types';
 import {
     ClipboardList,
     DollarSign,
@@ -24,6 +25,17 @@ const Dashboard = () => {
     const [showServico, setShowServico] = useState(false);
     const [showCliente, setShowCliente] = useState(false);
     const [selectedMonthIndex, setSelectedMonthIndex] = useState(allMonthsData.length - 1);
+    const [servicos, setServicos] = useState<Servico[]>([]);
+    const [empresas, setEmpresas] = useState<Empresa[]>([]);
+
+    useEffect(() => {
+        Promise.all([servicosApi.list(), empresasApi.list()])
+            .then(([srv, emp]) => {
+                setServicos(srv);
+                setEmpresas(emp);
+            })
+            .catch(console.error);
+    }, []);
 
     const selectedMonth = allMonthsData[selectedMonthIndex];
     const prevMonth = selectedMonthIndex > 0 ? allMonthsData[selectedMonthIndex - 1] : null;
@@ -105,7 +117,7 @@ const Dashboard = () => {
                 {/* Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 animate-slide-up stagger-7">
-                        <RecentServices servicos={mockServicos} empresas={mockEmpresas} />
+                        <RecentServices servicos={servicos} empresas={empresas} />
                     </div>
 
                     <div className="space-y-6">

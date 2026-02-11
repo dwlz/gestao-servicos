@@ -1,0 +1,22 @@
+name: Deploy to Square Cloud
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy Application
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Upload to Square Cloud
+        uses: squarecloudofc/squarecloud-action@v1
+        with:
+          token: ${{ secrets.SQUARECLOUD_TOKEN }}
+          application_id: ${{ secrets.SQUARECLOUD_APP_ID }}
+          restart: true

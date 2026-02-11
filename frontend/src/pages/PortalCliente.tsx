@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     ShieldCheck,
     Wrench,
@@ -15,11 +15,11 @@ import {
     Eye,
     Building2,
 } from 'lucide-react';
-import { mockServicos, mockEmpresas, mockLocais, mockOrcamentos } from '../services/mockData';
+import { empresasApi, servicosApi, orcamentosApi } from '../services/api';
 import clsx from 'clsx';
+import type { Servico, Empresa, Local, Orcamento } from '../types';
 
-// Simulate "logged-in client" = Supermercado Compre Bem (id: '1')
-const clienteAtualId = '1';
+
 
 const statusConfig: Record<string, { color: string; label: string; icon: React.ElementType }> = {
     pendente: { color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20', label: 'Pendente', icon: Clock },
@@ -38,11 +38,29 @@ const orcamentoStatusConfig: Record<string, { color: string; label: string }> = 
 const PortalCliente = () => {
     const [expandedServicos, setExpandedServicos] = useState<Record<string, boolean>>({});
     const [activeTab, setActiveTab] = useState<'servicos' | 'orcamentos'>('servicos');
+    const [empresa, setEmpresa] = useState<Empresa | null>(null);
+    const [locaisCliente, setLocaisCliente] = useState<Local[]>([]);
+    const [servicosCliente, setServicosCliente] = useState<Servico[]>([]);
+    const [orcamentosCliente, setOrcamentosCliente] = useState<Orcamento[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const empresa = mockEmpresas.find(e => e.id === clienteAtualId)!;
-    const locaisCliente = mockLocais.filter(l => l.empresaId === clienteAtualId);
-    const servicosCliente = mockServicos.filter(s => s.empresaId === clienteAtualId);
-    const orcamentosCliente = mockOrcamentos.filter(o => o.empresaId === clienteAtualId);
+    useEffect(() => {
+        // Load first empresa as the "logged-in client" for the portal
+        empresasApi.list().then(async (empresas) => {
+            if (empresas.length > 0) {
+                const emp = empresas[0];
+                setEmpresa(emp);
+                const [locs, servs, orcs] = await Promise.all([
+                    empresasApi.allLocais(),
+                    servicosApi.list({ empresaId: emp.id }),
+                    orcamentosApi.list({ empresaId: emp.id }),
+                ]);
+                setLocaisCliente(locs.filter(l => l.empresaId === emp.id));
+                setServicosCliente(servs);
+                setOrcamentosCliente(orcs);
+            }
+        }).catch(console.error).finally(() => setLoading(false));
+    }, []);
 
     const totalServicos = servicosCliente.length;
     const concluidos = servicosCliente.filter(s => s.status === 'concluido').length;
@@ -52,16 +70,16 @@ const PortalCliente = () => {
         setExpandedServicos(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
-    const getLocal = (id: string) => mockLocais.find(l => l.id === id);
+    const getLocal = (id: string) => locaisCliente.find(l => l.id === id);
 
     // Find orcamento linked to a servico (by empresaId + localId match)
     const getOrcamentoForServico = (servicoLocalId: string) => {
-        return mockOrcamentos.find(o => o.empresaId === clienteAtualId && o.localId === servicoLocalId);
+        return orcamentosCliente.find(o => o.empresaId === empresa?.id && o.localId === servicoLocalId);
     };
 
     const handleDownloadNfce = (servicoId: string) => {
         const blob = new Blob(
-            [`NFC-e SIMULADA\n\nNúmero: ${servicoId}\nEmpresa: ${empresa.nome}\nCNPJ: ${empresa.cnpj}\nData: ${new Date().toLocaleDateString('pt-BR')}\n\nEste é um documento fiscal simulado para fins de demonstração.`],
+            [`NFC-e SIMULADA\n\nNúmero: ${servicoId}\nEmpresa: ${empresa?.nome}\nCNPJ: ${empresa?.cnpj}\nData: ${new Date().toLocaleDateString('pt-BR')}\n\nEste é um documento fiscal simulado para fins de demonstração.`],
             { type: 'text/plain' }
         );
         const url = URL.createObjectURL(blob);
@@ -71,6 +89,22 @@ const PortalCliente = () => {
         a.click();
         URL.revokeObjectURL(url);
     };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+            </div>
+        );
+    }
+
+    if (!empresa) {
+        return (
+            <div className="text-center py-20">
+                <p className="text-[var(--color-text-muted)] text-lg">Nenhuma empresa encontrada.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-page-enter">

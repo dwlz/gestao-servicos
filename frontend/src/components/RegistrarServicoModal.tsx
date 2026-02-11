@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { mockEmpresas, mockLocais } from '../services/mockData';
+import { empresasApi } from '../services/api';
 import { Building2, User } from 'lucide-react';
+import type { Empresa, Local } from '../types';
 import clsx from 'clsx';
 
 interface RegistrarServicoModalProps {
@@ -20,14 +21,23 @@ const RegistrarServicoModal: React.FC<RegistrarServicoModalProps> = ({ isOpen, o
     const [valorMaoDeObra, setValorMaoDeObra] = useState(0);
     const [valorPecas, setValorPecas] = useState(0);
     const [equipamento, setEquipamento] = useState('');
+    const [empresas, setEmpresas] = useState<Empresa[]>([]);
+    const [locais, setLocais] = useState<Local[]>([]);
+
+    useEffect(() => {
+        if (isOpen) {
+            empresasApi.list().then(setEmpresas).catch(console.error);
+            empresasApi.allLocais().then(setLocais).catch(console.error);
+        }
+    }, [isOpen]);
 
     const clientesFiltrados = tipoCliente
-        ? mockEmpresas.filter(e => e.tipoPessoa === tipoCliente)
-        : mockEmpresas;
+        ? empresas.filter(e => e.tipoPessoa === tipoCliente)
+        : empresas;
 
-    const locaisFiltrados = mockLocais.filter(l => l.empresaId === clienteId);
+    const locaisFiltrados = locais.filter(l => l.empresaId === clienteId);
 
-    const clienteSelecionado = mockEmpresas.find(e => e.id === clienteId);
+    const clienteSelecionado = empresas.find(e => e.id === clienteId);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

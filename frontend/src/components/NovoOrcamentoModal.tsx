@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { mockEmpresas, mockLocais } from '../services/mockData';
+import { empresasApi } from '../services/api';
+import type { Empresa, Local } from '../types';
 
 interface NovoOrcamentoModalProps {
     isOpen: boolean;
@@ -12,8 +13,17 @@ const NovoOrcamentoModal: React.FC<NovoOrcamentoModalProps> = ({ isOpen, onClose
     const [localId, setLocalId] = useState('');
     const [validade, setValidade] = useState('');
     const [itens, setItens] = useState([{ descricao: '', qtd: 1, valorUnitario: 0 }]);
+    const [empresas, setEmpresas] = useState<Empresa[]>([]);
+    const [locais, setLocais] = useState<Local[]>([]);
 
-    const locaisFiltrados = mockLocais.filter(l => l.empresaId === empresaId);
+    useEffect(() => {
+        if (isOpen) {
+            empresasApi.list().then(setEmpresas).catch(console.error);
+            empresasApi.allLocais().then(setLocais).catch(console.error);
+        }
+    }, [isOpen]);
+
+    const locaisFiltrados = locais.filter(l => l.empresaId === empresaId);
 
     const addItem = () => setItens([...itens, { descricao: '', qtd: 1, valorUnitario: 0 }]);
     const removeItem = (i: number) => setItens(itens.filter((_, idx) => idx !== i));
@@ -43,7 +53,7 @@ const NovoOrcamentoModal: React.FC<NovoOrcamentoModalProps> = ({ isOpen, onClose
                         <label className={labelClass}>Empresa</label>
                         <select className={inputClass} value={empresaId} onChange={e => { setEmpresaId(e.target.value); setLocalId(''); }} required>
                             <option value="">Selecione...</option>
-                            {mockEmpresas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                            {empresas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
                         </select>
                     </div>
                     <div>

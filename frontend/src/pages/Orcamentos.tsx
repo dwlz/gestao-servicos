@@ -1,6 +1,8 @@
-import { mockOrcamentos, mockEmpresas } from '../services/mockData';
+import { useState, useEffect } from 'react';
+import { orcamentosApi, empresasApi } from '../services/api';
 import { FileText, Plus, Check, X, Send, ClipboardList } from 'lucide-react';
 import clsx from 'clsx';
+import type { Orcamento, Empresa } from '../types';
 
 const statusConfig = {
     rascunho: { color: 'bg-gray-500/10 text-gray-500', label: 'Rascunho', icon: FileText },
@@ -10,7 +12,29 @@ const statusConfig = {
 };
 
 const Orcamentos = () => {
-    const getEmpresaNome = (id: string) => mockEmpresas.find(e => e.id === id)?.nome || '—';
+    const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
+    const [empresas, setEmpresas] = useState<Empresa[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        Promise.all([orcamentosApi.list(), empresasApi.list()])
+            .then(([orc, emp]) => {
+                setOrcamentos(orc);
+                setEmpresas(emp);
+            })
+            .catch(console.error)
+            .finally(() => setLoading(false));
+    }, []);
+
+    const getEmpresaNome = (id: string) => empresas.find(e => e.id === id)?.nome || '—';
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-page-enter">
@@ -31,7 +55,7 @@ const Orcamentos = () => {
             </div>
 
             <div className="grid gap-4">
-                {mockOrcamentos.map((orcamento, i) => {
+                {orcamentos.map((orcamento, i) => {
                     const StatusIcon = statusConfig[orcamento.status].icon;
 
                     return (

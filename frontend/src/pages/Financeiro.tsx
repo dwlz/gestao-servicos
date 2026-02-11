@@ -1,17 +1,37 @@
-import { mockTransacoes } from '../services/mockData';
+import { useState, useEffect } from 'react';
+import { financeiroApi } from '../services/api';
 import { ArrowUpCircle, ArrowDownCircle, Filter, Download, Wallet } from 'lucide-react';
 import clsx from 'clsx';
+import type { TransacaoFinanceira } from '../types';
 
 const Financeiro = () => {
-    const totalReceitas = mockTransacoes
+    const [transacoes, setTransacoes] = useState<TransacaoFinanceira[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        financeiroApi.list()
+            .then(setTransacoes)
+            .catch(console.error)
+            .finally(() => setLoading(false));
+    }, []);
+
+    const totalReceitas = transacoes
         .filter(t => t.tipo === 'receita' && t.status === 'pago')
         .reduce((acc, curr) => acc + curr.valor, 0);
 
-    const totalDespesas = mockTransacoes
+    const totalDespesas = transacoes
         .filter(t => t.tipo === 'despesa' && t.status === 'pago')
         .reduce((acc, curr) => acc + curr.valor, 0);
 
     const saldo = totalReceitas - totalDespesas;
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-page-enter">
@@ -89,7 +109,7 @@ const Financeiro = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-[var(--color-border)]">
-                                {mockTransacoes.map((transacao) => (
+                                {transacoes.map((transacao) => (
                                     <tr key={transacao.id} className="hover:bg-[var(--color-surface-hover)] transition-colors">
                                         <td className="px-5 py-4 text-xs text-[var(--color-text-muted)]">
                                             {new Date(transacao.data).toLocaleDateString('pt-BR')}

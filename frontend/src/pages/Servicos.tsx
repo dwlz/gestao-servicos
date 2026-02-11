@@ -1,15 +1,30 @@
-import { useState } from 'react';
-import { mockServicos, mockEmpresas, mockLocais } from '../services/mockData';
+import { useState, useEffect } from 'react';
+import { servicosApi, empresasApi } from '../services/api';
 import ServiceCard from '../components/ServiceCard';
 import { Plus, Search, Wrench } from 'lucide-react';
-import type { StatusServico, TipoServico } from '../types';
+import type { StatusServico, TipoServico, Servico, Empresa, Local } from '../types';
 
 const Servicos = () => {
     const [filterStatus, setFilterStatus] = useState<StatusServico | 'todos'>('todos');
     const [filterTipo, setFilterTipo] = useState<TipoServico | 'todos'>('todos');
     const [searchTerm, setSearchTerm] = useState('');
+    const [servicos, setServicos] = useState<Servico[]>([]);
+    const [empresas, setEmpresas] = useState<Empresa[]>([]);
+    const [locais, setLocais] = useState<Local[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const filteredServicos = mockServicos.filter(servico => {
+    useEffect(() => {
+        Promise.all([servicosApi.list(), empresasApi.list(), empresasApi.allLocais()])
+            .then(([srv, emp, loc]) => {
+                setServicos(srv);
+                setEmpresas(emp);
+                setLocais(loc);
+            })
+            .catch(console.error)
+            .finally(() => setLoading(false));
+    }, []);
+
+    const filteredServicos = servicos.filter(servico => {
         const matchesSearch = servico.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
             servico.descricao.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'todos' || servico.status === filterStatus;
@@ -17,10 +32,18 @@ const Servicos = () => {
         return matchesSearch && matchesStatus && matchesTipo;
     });
 
-    const getEmpresa = (id: string) => mockEmpresas.find(e => e.id === id);
-    const getLocal = (id: string) => mockLocais.find(l => l.id === id);
+    const getEmpresa = (id: string) => empresas.find(e => e.id === id);
+    const getLocal = (id: string) => locais.find(l => l.id === id);
 
     const selectClass = "px-3 py-2.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20";
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-page-enter">
